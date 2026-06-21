@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BMHL 4v4 - 28-0 Challenge</title>
+  <style>
+    :root {
+      --primary: #00ccff;
+      --bg: #0a0a1f;
+      --card: #112233;
+    }
+    body {
+      font-family: 'Arial', sans-serif;
+      background: var(--bg);
+      color: #ddd;
+      padding: 20px;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .header { text-align: center; margin-bottom: 25px; }
+    h1 {
+      color: var(--primary);
+      font-size: 2.8em;
+      margin: 0;
+      text-shadow: 0 0 15px rgba(0, 204, 255, 0.5);
+    }
+    .container {
+      display: flex;
+      gap: 25px;
+      max-width: 1400px;
+      width: 100%;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .main {
+      flex: 1;
+      min-width: 380px;
+      max-width: 520px;
+    }
+    .roster-container {
+      max-height: 65vh;
+      overflow-y: auto;
+      padding-right: 10px;
+      scrollbar-width: thin;
+      scrollbar-color: #00ccff #223344;
+    }
+    .player {
+      background: #223344;
+      margin: 8px 0;
+      padding: 12px;
+      border-radius: 10px;
+      border: 2px solid #00ccff22;
+      transition: all 0.2s;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .player:hover {
+      border-color: var(--primary);
+      box-shadow: 0 0 12px rgba(0, 204, 255, 0.4);
+      transform: translateX(5px);
+    }
+    .player img {
+      width: 55px;
+      height: 55px;
+      border-radius: 50%;
+      border: 3px solid #00ccff;
+      object-fit: cover;
+    }
+    .sidebar {
+      background: var(--card);
+      padding: 25px;
+      border-radius: 16px;
+      border: 2px solid #00ccff33;
+      width: 340px;
+      height: fit-content;
+    }
+    .lines-container {
+      width: 460px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .line {
+      background: #1a2233;
+      padding: 20px;
+      border-radius: 16px;
+      border: 2px solid #00ccff44;
+    }
+    .line h3 {
+      color: var(--primary);
+      margin: 0 0 18px 0;
+      text-align: center;
+    }
+    .formation {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+    }
+    .slot {
+      width: 130px;
+      background: #223344;
+      border: 2px dashed #00ccff44;
+      border-radius: 12px;
+      padding: 12px 8px;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .slot.filled {
+      border-style: solid;
+      border-color: #00ffcc;
+      background: #1f2a44;
+    }
+    .slot .pos {
+      color: #00ffcc;
+      font-size: 0.95em;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+    .slot img {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      border: 2px solid #00ccff;
+      object-fit: cover;
+      margin-bottom: 6px;
+    }
+    button {
+      padding: 14px 28px;
+      font-size: 18px;
+      background: var(--primary);
+      color: black;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 8px 4px;
+      transition: 0.2s;
+    }
+    button:hover { background: #00ffcc; }
+    button:disabled { background: #555; cursor: not-allowed; }
+    #spinResult {
+      font-size: 1.4em;
+      min-height: 110px;
+      margin: 15px 0;
+      padding: 16px;
+      background: #1a2233;
+      border-radius: 12px;
+      border-left: 6px solid var(--primary);
+      text-align: center;
+      transition: all 0.2s ease;
+      font-family: monospace;
+    }
+    @keyframes pop {
+      0% { transform: scale(0.6); }
+      50% { transform: scale(1.15); }
+      100% { transform: scale(1); }
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.85);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background: #112233;
+      padding: 25px;
+      border-radius: 16px;
+      border: 2px solid var(--primary);
+      max-width: 500px;
+      text-align: center;
+    }
+    .stats {
+      font-size: 0.85em;
+      color: #00ffcc;
+      margin-top: 4px;
+      line-height: 1.3;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🏒 BMHL 4v4 - 28-0 CHALLENGE 🏒</h1>
+    <h2 id="teamNameDisplay" style="color:#00ccff;">Your Dynasty</h2>
+  </div>
+
+  <div class="container">
+    <div class="main">
+      <input type="text" id="teamNameInput" placeholder="Enter your team name" style="padding:12px; width:90%; font-size:16px; margin-bottom:10px;">
+      <button onclick="setTeamName()">Set Team Name</button>
+      <button onclick="clearRoster()" style="background:#c00;">Clear Roster</button>
+      <button onclick="autoBestLineup()">⭐ Best Lineup</button><br><br>
+    
+      <button id="spinBtn" onclick="spin()">🎰 SPIN FOR PLAYER</button>
+      <button onclick="simulateSeason()">🏒 SIMULATE 28 GAME SEASON</button>
+      <button id="playoffsBtn" onclick="simulatePlayoffs()" style="display:none; background:#ffd700;">🏆 SIMULATE PLAYOFFS</button>
+      <button onclick="shareTeam()">🔗 Share Team</button>
+      <button onclick="showLoadModal()">📥 Load Team</button>
+    
+      <div id="spinResult"></div>
+    
+      <div class="roster-container">
+        <div id="team"></div>
+      </div>
+    </div>
+
+    <div class="lines-container">
+      <div class="line" id="line1">
+        <h3>🔥 LINE 1 (4 Players)</h3>
+        <div class="formation" id="line1-formation"></div>
+      </div>
+      <div class="line" id="line2">
+        <h3>🔥 LINE 2 (4 Players)</h3>
+        <div class="formation" id="line2-formation"></div>
+      </div>
+      <div class="line" id="goalies">
+        <h3>🥅 GOALIES (2)</h3>
+        <div class="formation" id="goalies-formation"></div>
+      </div>
+    </div>
+
+    <div class="sidebar">
+      <h3 style="color:var(--primary); margin-top:0;">📊 Season Results</h3>
+      <div id="seasonResults" style="color:#aaa; line-height:1.6;">
+        Build your roster and simulate the season!
+      </div>
+    </div>
+  </div>
+
+  <!-- Modals -->
+  <div id="assignModal" class="modal">
+    <div class="modal-content">
+      <h3 id="modalPlayerName" style="color:var(--primary);"></h3>
+      <div id="slotOptions" style="display:flex; flex-direction:column; gap:8px; margin:20px 0;"></div>
+      <button onclick="closeModal()" style="background:#555;">Cancel</button>
+    </div>
+  </div>
+
+  <div id="shareModal" class="modal">
+    <div class="modal-content">
+      <h3 style="color:var(--primary);">🔗 Share Your Team</h3>
+      <textarea id="shareCode" readonly style="width:100%; height:140px; background:#000; color:#0f0; font-family:monospace; padding:10px;"></textarea>
+      <button onclick="copyShareCode()">📋 Copy Code</button>
+      <button onclick="closeShareModal()" style="background:#555;">Close</button>
+    </div>
+  </div>
+
+  <div id="loadModal" class="modal">
+    <div class="modal-content">
+      <h3 style="color:var(--primary);">📥 Load Team</h3>
+      <textarea id="loadCode" placeholder="Paste share code here..." style="width:100%; height:140px; background:#000; color:#0f0; font-family:monospace; padding:10px;"></textarea>
+      <button onclick="loadTeam()">✅ Load Team</button>
+      <button onclick="closeLoadModal()" style="background:#555;">Cancel</button>
+    </div>
+  </div>
+
+<script>
+const playersPool = [
+  // Sacramento Sabretooths
+  { name: "2gapes", position: "LW", rating: 85, team: "Sacramento Sabretooths", image: "images/2gapes.png" },
+  { name: "438zack", position: "FWD", rating: 95, team: "Sacramento Sabretooths", image: "images/438zack.png" },
+  { name: "CoolBray000", position: "FWD", rating: 96, team: "Sacramento Sabretooths", image: "images/coolbray000.png" },
+  { name: "Fullthrottlecaleb", position: "LW", rating: 90, team: "Sacramento Sabretooths", image: "images/fullthrottlecaleb.png" },
+  { name: "GummyBlocks", position: "D", rating: 88, team: "Sacramento Sabretooths", image: "images/gummyblocks.png" },
+  { name: "OhGodRun", position: "GK", rating: 86, team: "Sacramento Sabretooths", image: "images/ohgodrun.png" },
+  { name: "qugl", position: "D", rating: 82, team: "Sacramento Sabretooths", image: "images/qugl.png" },
+  { name: "RichPrinceNate", position: "FWD", rating: 87, team: "Sacramento Sabretooths", image: "images/richprincenate.png" },
+  { name: "Sammyyy5028", position: "D", rating: 84, team: "Sacramento Sabretooths", image: "images/sammyyy5028.png" },
+  { name: "vivaclog", position: "FWD", rating: 99, team: "Sacramento Sabretooths", image: "images/vivaclog.png" },
+  { name: "zoticaz", position: "D", rating: 86, team: "Sacramento Sabretooths", image: "images/zoticaz.png" },
+  // Montauk Mariners
+  { name: "305tobbydog", position: "G", rating: 92, team: "Montauk Mariners", image: "images/305tobbydog.png" },
+  { name: "alexnickjr", position: "C", rating: 89, team: "Montauk Mariners", image: "images/alexnickjr.png" },
+  { name: "AReasonableMike", position: "G", rating: 86, team: "Montauk Mariners", image: "images/areasonablemike.png" },
+  { name: "bknackprod", position: "LW", rating: 90, team: "Montauk Mariners", image: "images/bknackprod.png" },
+  { name: "bongoImao", position: "C", rating: 85, team: "Montauk Mariners", image: "images/bongolmao.png" },
+  { name: "crownnprod", position: "LD", rating: 87, team: "Montauk Mariners", image: "images/crownnprod.png" },
+  { name: "DidntAskNeverWiII", position: "RW", rating: 89, team: "Montauk Mariners", image: "images/didntaskneverwill.png" },
+  { name: "Drizzzzzzzzzzy93", position: "LW", rating: 88, team: "Montauk Mariners", image: "images/drizzzzzzzzzzy93.png" },
+  { name: "Gibbletoot", position: "RD", rating: 86, team: "Montauk Mariners", image: "images/gibbletoot.png" },
+  { name: "Grizo", position: "LD", rating: 88, team: "Montauk Mariners", image: "images/grizo.png" },
+  { name: "MiddleManChaos", position: "RD", rating: 87, team: "Montauk Mariners", image: "images/middlemanchaos.png" },
+  { name: "rylanplaysfootball", position: "C", rating: 88, team: "Montauk Mariners", image: "images/rylanplaysfootball.png" },
+  { name: "swashaprod", position: "RW", rating: 92, team: "Montauk Mariners", image: "images/swashaprod.png" },
+  { name: "TrojanHorseAttack", position: "LD", rating: 90, team: "Montauk Mariners", image: "images/trojanhorseattack.png" },
+  { name: "wnorya", position: "RD", rating: 86, team: "Montauk Mariners", image: "images/wnorya.png" },
+  { name: "yvlcrimson", position: "G", rating: 84, team: "Montauk Mariners", image: "images/yvlcrimson.png" },
+  // St. Augustine Armada
+  { name: "1kRhinozy", position: "D", rating: 76, team: "St Augustine Armada", image: "images/1kRhinozy.png" },
+  { name: "Dackers19", position: "FWD", rating: 93, team: "St Augustine Armada", image: "images/Dackers19.png" },
+  { name: "DIMlTRESCU", position: "D", rating: 82, team: "St Augustine Armada", image: "images/DIMlTRESCU.png" },
+  { name: "echocaden", position: "D", rating: 81, team: "St Augustine Armada", image: "images/echocaden.png" },
+  { name: "etanoprod", position: "FWD", rating: 91, team: "St Augustine Armada", image: "images/etanoprod.png" },
+  { name: "gxzprod", position: "FWD", rating: 99, team: "St Augustine Armada", image: "images/gxzprod.png" },
+  { name: "Horr0rmatic", position: "FWD", rating: 87, team: "St Augustine Armada", image: "images/Horr0rmatic.png" },
+  { name: "Kopakai10", position: "D", rating: 83, team: "St Augustine Armada", image: "images/Kopakai10.png" },
+  { name: "Mr_Tornado95", position: "GK", rating: 84, team: "St Augustine Armada", image: "images/Mr_Tornado95.png" },
+  { name: "okglobal", position: "LW", rating: 82, team: "St Augustine Armada", image: "images/okglobal.png" },
+  { name: "PylonXin", position: "D", rating: 86, team: "St Augustine Armada", image: "images/PylonXin.png" },
+  { name: "RollyRolo72", position: "LW", rating: 84, team: "St Augustine Armada", image: "images/RollyRolo72.png" },
+  { name: "snipezofc", position: "D", rating: 83, team: "St Augustine Armada", image: "images/snipezofc.png" },
+  { name: "StanleyCup_World", position: "GK", rating: 95, team: "St Augustine Armada", image: "images/StanleyCup_World.png" },
+  { name: "WhosGalaxy", position: "FWD", rating: 86, team: "St Augustine Armada", image: "images/WhosGalaxy.png" },
+  { name: "zombiesobased", position: "LW", rating: 84, team: "St Augustine Armada", image: "images/zombiesobased.png" },
+  // Fuzhou Foxes
+  { name: "6nsta", position: "FWD", rating: 95, team: "Fuzhou Foxes", image: "images/6nsta.png" },
+  { name: "Awesomeroblox4lyfe", position: "LW", rating: 79, team: "Fuzhou Foxes", image: "images/Awesomeroblox4lyfe.png" },
+  { name: "AWOfficialRBLX", position: "LW", rating: 70, team: "Fuzhou Foxes", image: "images/AWOfficialRBLX.png" },
+  { name: "Cookie77622", position: "GK", rating: 85, team: "Fuzhou Foxes", image: "images/Cookie77622.png" },
+  { name: "Deqarus", position: "FWD", rating: 86, team: "Fuzhou Foxes", image: "images/Deqarus.png" },
+  { name: "DiamondMan215", position: "FWD", rating: 87, team: "Fuzhou Foxes", image: "images/DiamondMan215.png" },
+  { name: "Drxisaitl", position: "D", rating: 78, team: "Fuzhou Foxes", image: "images/Drxisaitl.png" },
+  { name: "G0nW1ld", position: "D", rating: 90, team: "Fuzhou Foxes", image: "images/G0nW1ld.png" },
+  { name: "hiquazkata", position: "FWD", rating: 88, team: "Fuzhou Foxes", image: "images/hiquazkata.png" },
+  { name: "HockeyPup32", position: "D", rating: 89, team: "Fuzhou Foxes", image: "images/HockeyPup32.png" },
+  { name: "Jositheseller", position: "D", rating: 75, team: "Fuzhou Foxes", image: "images/Jositheseller.png" },
+  { name: "nlj04", position: "GK", rating: 85, team: "Fuzhou Foxes", image: "images/nlj04.png" },
+  { name: "NoArFi10", position: "LW", rating: 75, team: "Fuzhou Foxes", image: "images/NoArFi10.png" },
+  { name: "witheringvoices", position: "LW", rating: 67, team: "Fuzhou Foxes", image: "images/witheringvoices.png" },
+  // Toronto Icemen
+  { name: "airpod0402", position: "D", rating: 78, team: "Toronto Icemen", image: "images/airpod0402.png" },
+  { name: "BuzztheFlyGuy", position: "D", rating: 83, team: "Toronto Icemen", image: "images/BuzztheFlyGuy.png" },
+  { name: "DesiredBuiId", position: "D", rating: 85, team: "Toronto Icemen", image: "images/DesiredBuiId.png" },
+  { name: "H3llebuyck", position: "LW", rating: 87, team: "Toronto Icemen", image: "images/H3llebuyck.png" },
+  { name: "hooperovv", position: "GK", rating: 93, team: "Toronto Icemen", image: "images/hooperovv.png" },
+  { name: "noahninja2134", position: "FWD", rating: 94, team: "Toronto Icemen", image: "images/noahninja2134.png" },
+  { name: "OffAntplayz", position: "D", rating: 85, team: "Toronto Icemen", image: "images/OffAntplayz.png" },
+  { name: "realflusk", position: "FWD", rating: 94, team: "Toronto Icemen", image: "images/realflusk.png" },
+  { name: "Universalzog", position: "FWD", rating: 93, team: "Toronto Icemen", image: "images/Universalzog.png" },
+  { name: "vPaidJake", position: "LW", rating: 90, team: "Toronto Icemen", image: "images/vPaidJake.png" },
+  { name: "x_kxne", position: "LW", rating: 85, team: "Toronto Icemen", image: "images/x_kxne.png" },
+  // Myrtle Beach Sharks
+  { name: "cay11loll", position: "D", rating: 80, team: "Myrtle Beach Sharks", image: "images/cay11loll.png" },
+  { name: "Guigui15082022", position: "D", rating: 75, team: "Myrtle Beach Sharks", image: "images/Guigui15082022.png" },
+  { name: "Jwkmann", position: "FWD", rating: 84, team: "Myrtle Beach Sharks", image: "images/Jwkmann.png" },
+  { name: "Lcoop160", position: "FWD", rating: 88, team: "Myrtle Beach Sharks", image: "images/Lcoop160.png" },
+  { name: "LeakedPiins", position: "D", rating: 87, team: "Myrtle Beach Sharks", image: "images/LeakedPiins.png" },
+  { name: "Inhalin", position: "D", rating: 83, team: "Myrtle Beach Sharks", image: "images/Inhalin.png" },
+  { name: "ninjasemion", position: "FWD", rating: 90, team: "Myrtle Beach Sharks", image: "images/ninjasemion.png" },
+  { name: "Noobbest991", position: "FWD", rating: 78, team: "Myrtle Beach Sharks", image: "images/Noobbest991.png" },
+  { name: "pxstasobased", position: "FWD", rating: 91, team: "Myrtle Beach Sharks", image: "images/pxstasobased.png" },
+  { name: "rreap1", position: "LW", rating: 84, team: "Myrtle Beach Sharks", image: "images/rreap1.png" },
+  { name: "s7vzr1nho", position: "LW", rating: 88, team: "Myrtle Beach Sharks", image: "images/s7vzr1nho.png" },
+  { name: "squishymuffins34", position: "FWD", rating: 86, team: "Myrtle Beach Sharks", image: "images/squishymuffins34.png" },
+  { name: "WhosPolisius", position: "GK", rating: 88, team: "Myrtle Beach Sharks", image: "images/WhosPolisius.png" },
+  // Gummy Express
+  { name: "andy21724", position: "FWD", rating: 86, team: "Gummy Express", image: "images/andy21724.png" },
+  { name: "Asomeml11", position: "D", rating: 83, team: "Gummy Express", image: "images/Asomeml11.png" },
+  { name: "DeportedIndian", position: "LW", rating: 85, team: "Gummy Express", image: "images/DeportedIndian.png" },
+  { name: "duotroop", position: "GK", rating: 85, team: "Gummy Express", image: "images/duotroop.png" },
+  { name: "g4mski", position: "LW", rating: 86, team: "Gummy Express", image: "images/g4mski.png" },
+  { name: "ihatefun", position: "FWD", rating: 95, team: "Gummy Express", image: "images/ihatefun.png" },
+  { name: "loltommy6", position: "D", rating: 78, team: "Gummy Express", image: "images/loltommy6.png" },
+  { name: "M_xkar", position: "D", rating: 87, team: "Gummy Express", image: "images/M_xkar.png" },
+  { name: "mattserov", position: "FWD", rating: 90, team: "Gummy Express", image: "images/mattserov.png" },
+  { name: "plaserov", position: "FWD", rating: 86, team: "Gummy Express", image: "images/plaserov.png" },
+  { name: "t_rbocharge", position: "GK", rating: 92, team: "Gummy Express", image: "images/t_rbocharge.png" },
+  { name: "xxx_hockeykid9148", position: "D", rating: 75, team: "Gummy Express", image: "images/xxx_hockeykid9148.png" },
+  { name: "yorobbie132", position: "LW", rating: 86, team: "Gummy Express", image: "images/yorobbie132.png" },
+  // Thunder Bay Surge
+  { name: "Aquaticbiaze", position: "FWD", rating: 85, team: "Thunder Bay Surge", image: "images/Aquaticbiaze.png" },
+  { name: "b_mav", position: "D", rating: 76, team: "Thunder Bay Surge", image: "images/b_mav.png" },
+  { name: "Brusk74", position: "GK", rating: 83, team: "Thunder Bay Surge", image: "images/Brusk74.png" },
+  { name: "elitebfc", position: "FWD", rating: 85, team: "Thunder Bay Surge", image: "images/elitebfc.png" },
+  { name: "gin_20", position: "FWD", rating: 81, team: "Thunder Bay Surge", image: "images/gin_20.png" },
+  { name: "hockeyrango23", position: "LW", rating: 80, team: "Thunder Bay Surge", image: "images/hockeyrango23.png" },
+  { name: "JxstinFriedChicken", position: "FWD", rating: 77, team: "Thunder Bay Surge", image: "images/JxstinFriedChicken.png" },
+  { name: "loxrez", position: "FWD", rating: 85, team: "Thunder Bay Surge", image: "images/loxrez.png" },
+  { name: "nxvein", position: "FWD", rating: 88, team: "Thunder Bay Surge", image: "images/nxvein.png" },
+  { name: "pinktwhitet", position: "LW", rating: 75, team: "Thunder Bay Surge", image: "images/pinktwhitet.png" },
+  { name: "snakiejakie123", position: "LW", rating: 84, team: "Thunder Bay Surge", image: "images/snakiejakie123.png" },
+  { name: "soreezzzz", position: "D", rating: 75, team: "Thunder Bay Surge", image: "images/soreezzzz.png" },
+  { name: "uaq_x", position: "FWD", rating: 91, team: "Thunder Bay Surge", image: "images/uaq_x.png" },
+  { name: "WaitedSeverino", position: "LW", rating: 80, team: "Thunder Bay Surge", image: "images/WaitedSeverino.png" },
+  { name: "z_R0tation", position: "FWD", rating: 83, team: "Thunder Bay Surge", image: "images/z_R0tation.png" }
+];
+
+let myTeam = [];
+let lines = { line1: [], line2: [], goalies: [] };
+let teamName = "Your Dynasty";
+let seasonStats = {};
+let playoffsWon = false;
+
+const ROSTER_MAX = 10;
+const MAX_FORWARDS = 6;
+const MAX_DEFENDERS = 2;
+const MAX_GOALIES = 2;
+
+let spinInterval = null;
+let selectedPlayerIndex = null;
+
+// Slot position labels for lines: [LW, C, RW, D]
+const LINE_POS_LABELS = ["LW", "C", "RW", "D"];
+
+function getDisplayName(player) {
+  return player.name.toLowerCase();
+}
+
+function countAssignedByType() {
+  let forwards = 0, defenders = 0, goalies = 0;
+  Object.values(lines).flat().forEach(p => {
+    if (!p) return;
+    if (["LW","RW","FWD","C"].includes(p.position)) forwards++;
+    else if (["D","LD","RD"].includes(p.position)) defenders++;
+    else if (["G","GK"].includes(p.position)) goalies++;
+  });
+  return { forwards, defenders, goalies };
+}
+
+function calculateTeamStrength() {
+  let total = 0, count = 0;
+  Object.values(lines).flat().forEach(p => {
+    if (p) {
+      const mult = (["G","GK"].includes(p.position)) ? 1.25 :
+                   (lines.line1 || []).some(lp => lp && lp.name === p.name) ? 1.35 : 1.1;
+      total += p.rating * mult;
+      count++;
+    }
+  });
+  return count > 0 ? Math.round(total / count) : 75;
+}
+
+function autoBestLineup() {
+  if (myTeam.length < 6) return alert("Need at least 6 players for a full lineup!");
+  lines = { line1: [], line2: [], goalies: [] };
+  let goaliesList = myTeam.filter(p => ["G","GK"].includes(p.position)).sort((a,b) => b.rating - a.rating);
+  let defendersList = myTeam.filter(p => ["D","LD","RD"].includes(p.position)).sort((a,b) => b.rating - a.rating);
+  let forwardsList = myTeam.filter(p => ["LW","RW","FWD","C"].includes(p.position)).sort((a,b) => b.rating - a.rating);
+  lines.goalies = goaliesList.slice(0, 2);
+  lines.line1 = [forwardsList[0], forwardsList[1], forwardsList[2], defendersList[0]].filter(Boolean);
+  lines.line2 = [forwardsList[3]||forwardsList[0], forwardsList[4]||forwardsList[1], forwardsList[5]||forwardsList[2], defendersList[1]||defendersList[0]].filter(Boolean);
+  renderRoster();
+  renderLines();
+  alert("⭐ Best Lineup automatically assigned!");
+}
+
+// ================== SPIN ==================
+function spin() {
+  if (myTeam.length >= ROSTER_MAX) return alert("Roster is full (10 players)!");
+  const btn = document.getElementById("spinBtn");
+  const resultDiv = document.getElementById("spinResult");
+  const draftedNames = new Set(myTeam.map(p => p.name));
+  let available = playersPool.filter(p => !draftedNames.has(p.name));
+  if (available.length === 0) return alert("No players left!");
+
+  const counts = countAssignedByType();
+  const needsForward = counts.forwards < MAX_FORWARDS;
+  const needsDefender = counts.defenders < MAX_DEFENDERS;
+  const needsGoalie = counts.goalies < MAX_GOALIES;
+
+  if (!needsForward) available = available.filter(p => !["LW","RW","FWD","C"].includes(p.position));
+  if (!needsDefender) available = available.filter(p => !["D","LD","RD"].includes(p.position));
+  if (!needsGoalie) available = available.filter(p => !["G","GK"].includes(p.position));
+
+  let finalPool = available;
+  const neededCount = [needsForward, needsDefender, needsGoalie].filter(x => x).length;
+  if (neededCount === 1) {
+    if (needsForward) finalPool = available.filter(p => ["LW","RW","FWD","C"].includes(p.position));
+    else if (needsDefender) finalPool = available.filter(p => ["D","LD","RD"].includes(p.position));
+    else if (needsGoalie) finalPool = available.filter(p => ["G","GK"].includes(p.position));
+  }
+  if (finalPool.length === 0) finalPool = available;
+
+  btn.disabled = true;
+  btn.textContent = "🎰 SPINNING...";
+  let spinCount = 0;
+  const maxSpins = 32;
+
+  spinInterval = setInterval(() => {
+    spinCount++;
+    const randomPlayer = finalPool[Math.floor(Math.random() * finalPool.length)];
+    resultDiv.innerHTML = `
+      <span style="opacity:0.7;">🎰 SPINNING...</span><br><br>
+      <strong style="font-size:1.7em;">${getDisplayName(randomPlayer)}</strong><br>
+      <span style="color:#00ffcc;">${randomPlayer.position} • ${randomPlayer.rating} OVR</span>
+    `;
+    if (spinCount >= maxSpins) {
+      clearInterval(spinInterval);
+      const player = finalPool[Math.floor(Math.random() * finalPool.length)];
+      myTeam.push(player);
+      resultDiv.innerHTML = `
+        <span style="color:#ffd700; font-size:2.1em;">✅ DRAFTED!</span><br><br>
+        <strong style="font-size:1.85em;">${getDisplayName(player)}</strong><br>
+        <span style="color:#00ffcc;">${player.position} • ${player.rating} OVR</span><br>
+        <small>from ${player.team}</small>
+      `;
+      renderRoster();
+      btn.disabled = false;
+      btn.textContent = "🎰 SPIN FOR PLAYER";
+    }
+  }, 55);
+}
+
+// ================== REALISTIC STATS ==================
+// Goals scale tightly with rating. A 99 OVR scores ~35-42, a 70 OVR scores ~4-9.
+// Small random variance (±3 goals) so ratings matter more than luck.
+function skaterGoals(rating) {
+  // Base: maps rating 65->2, 80->14, 90->24, 99->35
+  const base = Math.round((rating - 65) * 1.05);
+  const variance = Math.floor(Math.random() * 7) - 3; // -3 to +3
+  return Math.max(0, base + variance);
+}
+
+function skaterAssists(rating, goals) {
+  // Assists slightly higher than goals, also OVR-driven
+  const base = Math.round((rating - 62) * 1.1);
+  const variance = Math.floor(Math.random() * 7) - 3;
+  return Math.max(0, base + variance);
+}
+
+function generateSeasonStats() {
+  seasonStats = {};
+  const allPlayers = Object.values(lines).flat().filter(Boolean);
+
+  allPlayers.forEach(player => {
+    const isGoalie = ["G","GK"].includes(player.position);
+    if (isGoalie) {
+      // Higher rated goalies get better save % and lower GAA
+      const svBase = 88 + (player.rating - 80) * 0.15;
+      const svVariance = (Math.random() * 2) - 1; // ±1%
+      const svPct = Math.min(97, Math.max(84, svBase + svVariance)).toFixed(1);
+      const shutouts = Math.floor((player.rating - 78) / 4 + Math.random() * 2);
+      const gaaBase = 3.5 - (player.rating - 80) * 0.06;
+      const gaaVariance = (Math.random() * 0.6) - 0.3;
+      const gaa = Math.max(1.2, gaaBase + gaaVariance).toFixed(2);
+      seasonStats[player.name] = { svPct, shutouts: Math.max(0, shutouts), gaa };
+    } else {
+      const goals = skaterGoals(player.rating);
+      const assists = skaterAssists(player.rating, goals);
+      seasonStats[player.name] = { goals, assists, points: goals + assists };
+    }
+  });
+}
+
+function simulateSeason() {
+  if (lines.line1.length + lines.line2.length + lines.goalies.length < 6) {
+    return alert("Assign more players to lines first!");
+  }
+  generateSeasonStats();
+  const strength = calculateTeamStrength();
+  let wins = 0, losses = 0, gf = 0, ga = 0;
+
+  for (let game = 1; game <= 28; game++) {
+    const opponentStrength = 78 + Math.floor(Math.random() * 18);
+    const winChance = (strength - opponentStrength) * 1.8 + 48;
+    const isWin = Math.random() * 100 < winChance;
+    if (isWin) wins++; else losses++;
+    const gameGF = Math.floor(Math.random() * 5) + 2;
+    const gameGA = Math.floor(Math.random() * 5) + 1;
+    gf += isWin ? gameGF : Math.max(0, gameGF - 1);
+    ga += isWin ? Math.max(0, gameGA - 1) : gameGA;
+  }
+
+  const winPct = ((wins / 28) * 100).toFixed(1);
+  const points = wins * 2;
+  const summary = wins >= 22 ? "🏆 LEGENDARY SEASON!" : wins >= 18 ? "🔥 Championship Contenders!" : wins >= 14 ? "✅ Strong Season" : wins >= 10 ? "📈 Decent Year" : "📉 Rebuilding Year";
+
+  let html = `
+    <strong style="color:#ffd700; font-size:1.3em;">${teamName}</strong><br><br>
+    Record: <strong>${wins} - ${losses}</strong><br>
+    Win %: <strong>${winPct}%</strong> | Points: <strong>${points}</strong><br>
+    GF: ${gf} | GA: ${ga} | Diff: <strong>${gf - ga}</strong><br><br>
+    <span style="color:#00ffcc;">${summary}</span><br><br>
+  `;
+
+  const skaters = Object.keys(seasonStats)
+    .filter(name => { const p = myTeam.find(pl => pl.name === name); return p && !["G","GK"].includes(p.position); })
+    .map(name => ({ name, ...seasonStats[name] }))
+    .sort((a, b) => b.points - a.points)
+    .slice(0, 4);
+
+  html += `<strong>Top Scorers:</strong><br>`;
+  skaters.forEach(s => html += `${s.name}: <strong>${s.goals}G ${s.assists}A</strong> (${s.points} pts)<br>`);
+
+  html += `<br><strong>Goalies:</strong><br>`;
+  const goaliesList = Object.keys(seasonStats)
+    .filter(name => { const p = myTeam.find(pl => pl.name === name); return p && ["G","GK"].includes(p.position); })
+    .map(name => ({ name, ...seasonStats[name] }));
+  goaliesList.forEach(g => html += `${g.name}: <strong>${g.svPct}% SV</strong> • ${g.shutouts} SO • ${g.gaa} GAA<br>`);
+
+  document.getElementById("seasonResults").innerHTML = html;
+  document.getElementById("playoffsBtn").style.display = "inline-block";
+  renderRoster();
+  renderLines();
+}
+
+function simulatePlayoffs() {
+  const strength = calculateTeamStrength();
+  let seriesWins = 0, seriesLosses = 0;
+  let html = `<strong style="color:#ffd700; font-size:1.3em;">🏆 FINALS - BEST OF 7 🏆</strong><br><br>`;
+  for (let game = 1; game <= 7; game++) {
+    const opponentStrength = 88 + Math.floor(Math.random() * 12);
+    const winChance = (strength - opponentStrength) * 1.5 + 42;
+    const isWin = Math.random() * 100 < winChance;
+    if (isWin) seriesWins++; else seriesLosses++;
+    html += `Game ${game}: ${isWin ? "✅ WIN" : "❌ LOSS"}<br>`;
+    if (seriesWins >= 4 || seriesLosses >= 4) break;
+  }
+  html += seriesWins >= 4
+    ? `<br><span style="color:#ffd700; font-size:1.5em;">🏆 CHAMPIONS OF BMHL! 🏆</span>`
+    : `<br><span style="color:#ff6666;">Runner-up - Great Season!</span>`;
+  document.getElementById("seasonResults").innerHTML += `<br><br>${html}`;
+  document.getElementById("playoffsBtn").style.display = "none";
+}
+
+// ================== ASSIGN MODAL — LW/C/RW/D labels ==================
+function showAssignModal(index) {
+  selectedPlayerIndex = index;
+  const player = myTeam[index];
+  document.getElementById("modalPlayerName").textContent = `Assign ${getDisplayName(player)} (${player.position})`;
+
+  const optionsDiv = document.getElementById("slotOptions");
+  optionsDiv.innerHTML = "";
+
+  const counts = countAssignedByType();
+  const isGoalie = ["G","GK"].includes(player.position);
+  const isForward = ["LW","RW","FWD","C"].includes(player.position);
+  const isDefender = ["D","LD","RD"].includes(player.position);
+
+  if (isGoalie) {
+    if (counts.goalies >= MAX_GOALIES) {
+      optionsDiv.innerHTML = "<p style='color:#ff6666;'>Goalie slots are full!</p>";
+    } else {
+      for (let i = 0; i < 2; i++) {
+        if (!lines.goalies[i]) {
+          const btn = document.createElement("button");
+          btn.textContent = `Goalie Slot ${i + 1}`;
+          btn.onclick = () => assignToSlot('goalies', i);
+          optionsDiv.appendChild(btn);
+        }
+      }
+    }
+  } else if (isForward) {
+    if (counts.forwards >= MAX_FORWARDS) {
+      optionsDiv.innerHTML = "<p style='color:#ff6666;'>All Forward slots are full!</p>";
+    } else {
+      // Slot indices 0=LW, 1=C, 2=RW within each line
+      ["line1", "line2"].forEach(lineKey => {
+        const current = lines[lineKey] || [];
+        [0, 1, 2].forEach(i => {
+          if (!current[i]) {
+            const btn = document.createElement("button");
+            btn.textContent = `${lineKey === "line1" ? "Line 1" : "Line 2"} — ${LINE_POS_LABELS[i]}`;
+            btn.onclick = () => assignToSlot(lineKey, i);
+            optionsDiv.appendChild(btn);
+          }
+        });
+      });
+    }
+  } else if (isDefender) {
+    if (counts.defenders >= MAX_DEFENDERS) {
+      optionsDiv.innerHTML = "<p style='color:#ff6666;'>All Defense slots are full!</p>";
+    } else {
+      ["line1", "line2"].forEach(lineKey => {
+        const current = lines[lineKey] || [];
+        if (!current[3]) {
+          const btn = document.createElement("button");
+          btn.textContent = `${lineKey === "line1" ? "Line 1" : "Line 2"} — D`;
+          btn.onclick = () => assignToSlot(lineKey, 3);
+          optionsDiv.appendChild(btn);
+        }
+      });
+    }
+  }
+
+  document.getElementById("assignModal").style.display = "flex";
+}
+
+function assignToSlot(lineKey, slotIndex) {
+  const player = myTeam[selectedPlayerIndex];
+  const alreadyUsed = Object.values(lines).flat().some(p => p && p.name === player.name);
+  if (alreadyUsed) { alert("This player is already assigned!"); closeModal(); return; }
+  if (!lines[lineKey]) lines[lineKey] = [];
+  lines[lineKey][slotIndex] = player;
+  closeModal();
+  renderRoster();
+  renderLines();
+}
+
+function closeModal() {
+  document.getElementById("assignModal").style.display = "none";
+  selectedPlayerIndex = null;
+}
+
+function shareTeam() {
+  if (myTeam.length === 0) return alert("Build a team first!");
+  const data = { teamName, myTeam, lines };
+  const encoded = btoa(JSON.stringify(data));
+  document.getElementById("shareCode").value = encoded;
+  document.getElementById("shareModal").style.display = "flex";
+}
+
+function copyShareCode() {
+  const ta = document.getElementById("shareCode");
+  ta.select();
+  document.execCommand("copy");
+  alert("✅ Code copied to clipboard!");
+}
+
+function closeShareModal() { document.getElementById("shareModal").style.display = "none"; }
+function showLoadModal() { document.getElementById("loadModal").style.display = "flex"; }
+function closeLoadModal() { document.getElementById("loadModal").style.display = "none"; }
+
+function loadTeam() {
+  const code = document.getElementById("loadCode").value.trim();
+  if (!code) return alert("Paste a code first!");
+  try {
+    const data = JSON.parse(atob(code));
+    if (confirm(`Load team "${data.teamName}"?`)) {
+      teamName = data.teamName || "Your Dynasty";
+      document.getElementById("teamNameDisplay").textContent = teamName;
+      myTeam = data.myTeam || [];
+      lines = data.lines || { line1: [], line2: [], goalies: [] };
+      seasonStats = {};
+      renderRoster();
+      renderLines();
+      closeLoadModal();
+      alert("✅ Team loaded successfully!");
+    }
+  } catch(e) { alert("❌ Invalid code!"); }
+}
+
+function setTeamName() {
+  const input = document.getElementById("teamNameInput").value.trim();
+  if (input) { teamName = input; document.getElementById("teamNameDisplay").textContent = teamName; }
+}
+
+function clearRoster() {
+  if (confirm("Clear entire roster and reset season?")) {
+    myTeam = [];
+    lines = { line1: [], line2: [], goalies: [] };
+    seasonStats = {};
+    document.getElementById("playoffsBtn").style.display = "none";
+    renderRoster();
+    renderLines();
+    document.getElementById("seasonResults").innerHTML = "Build your roster and simulate the season!";
+  }
+}
+
+// ================== RENDERING ==================
+function renderRoster() {
+  const teamDiv = document.getElementById("team");
+  teamDiv.innerHTML = `<h3 style="color:var(--primary);">Roster: ${myTeam.length}/${ROSTER_MAX} (Click to assign)</h3>`;
+  myTeam.forEach((player, index) => {
+    const div = document.createElement("div");
+    div.className = "player";
+    div.onclick = () => showAssignModal(index);
+    let statHTML = '';
+    const stats = seasonStats[player.name];
+    if (stats) {
+      if (["G","GK"].includes(player.position)) {
+        statHTML = `<div class="stats">SV%: ${stats.svPct} • SO: ${stats.shutouts} • GAA: ${stats.gaa}</div>`;
+      } else {
+        statHTML = `<div class="stats">${stats.goals}G ${stats.assists}A (${stats.points} pts)</div>`;
+      }
+    }
+    div.innerHTML = `
+      <img src="${player.image}" alt="${player.name}" onerror="this.src='https://via.placeholder.com/60/00ccff/000?text=${player.name[0]}'">
+      <div style="flex:1; text-align:left;">
+        <strong>${getDisplayName(player)}</strong><br>
+        ${player.position} — ${player.rating} OVR<br>
+        <small>${player.team}</small>
+        ${statHTML}
+      </div>
+    `;
+    teamDiv.appendChild(div);
+  });
+}
+
+function renderLine(lineKey, containerId) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = "";
+  let players = lines[lineKey] || [];
+  for (let i = 0; i < 4; i++) {
+    const slot = document.createElement("div");
+    slot.className = "slot" + (players[i] ? " filled" : "");
+    const posLabel = LINE_POS_LABELS[i];
+    if (players[i]) {
+      const p = players[i];
+      const stats = seasonStats[p.name] || {};
+      let statHTML = '';
+      if (stats.goals !== undefined) statHTML = `<div class="stats">${stats.goals}G ${stats.assists}A</div>`;
+      else if (stats.svPct) statHTML = `<div class="stats">${stats.svPct}% • ${stats.shutouts} SO</div>`;
+      slot.innerHTML = `
+        <div class="pos">${posLabel}</div>
+        <img src="${p.image}" onerror="this.src='https://via.placeholder.com/52/00ccff/000?text=${p.name[0]}'">
+        <strong>${getDisplayName(p)}</strong><br>
+        <small>${p.rating} OVR</small>
+        ${statHTML}
+      `;
+    } else {
+      slot.innerHTML = `<div class="pos">${posLabel}</div><em style="color:#666;">Empty</em>`;
+    }
+    container.appendChild(slot);
+  }
+}
+
+function renderGoalies() {
+  const container = document.getElementById("goalies-formation");
+  container.innerHTML = "";
+  const players = lines.goalies || [];
+  for (let i = 0; i < 2; i++) {
+    const slot = document.createElement("div");
+    slot.className = "slot" + (players[i] ? " filled" : "");
+    if (players[i]) {
+      const p = players[i];
+      const stats = seasonStats[p.name] || {};
+      let statHTML = stats.svPct ? `<div class="stats">${stats.svPct}% SV • ${stats.shutouts} SO</div>` : '';
+      slot.innerHTML = `
+        <div class="pos">G</div>
+        <img src="${p.image}" onerror="this.src='https://via.placeholder.com/52/00ccff/000?text=${p.name[0]}'">
+        <strong>${getDisplayName(p)}</strong><br>
+        <small>${p.rating} OVR</small>
+        ${statHTML}
+      `;
+    } else {
+      slot.innerHTML = `<div class="pos">G</div><em style="color:#666;">Empty</em>`;
+    }
+    container.appendChild(slot);
+  }
+}
+
+function renderLines() {
+  renderLine("line1", "line1-formation");
+  renderLine("line2", "line2-formation");
+  renderGoalies();
+}
+
+renderRoster();
+renderLines();
+</script>
+</body>
+</html>
