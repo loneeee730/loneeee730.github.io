@@ -503,6 +503,7 @@ let teamName = "Your Dynasty";
 let seasonStats = {};
 let playoffsWon = false;
 let seasonSimulated = false; // locks SIMULATE SEASON until roster/lines change
+let perfectRegSeason = false; // true only if regular season was 28-0
 
 // ================== LEAGUE STANDINGS ==================
 // Fixed strength ratings for the 7 rival BMHL teams (out of ~99).
@@ -916,6 +917,7 @@ function simulateSeason() {
   renderLines();
 
   seasonSimulated = true;
+  perfectRegSeason = (wins === 28);
   updateTradeDeadlineUI();
 
   // Build league-wide standings using the same win/loss record we just generated for you
@@ -1113,6 +1115,7 @@ function simulatePlayoffs() {
       }
       stats.points = stats.goals + stats.assists;
     }
+    if (!didYouWin) yourPlayoffGameLosses++;
     const startingGoalie = pickStartingGoalie();
     if (startingGoalie) {
       const gStats = playoffStats[startingGoalie.name];
@@ -1127,6 +1130,7 @@ function simulatePlayoffs() {
   // Top 8 seeds from the real standings table (all teams in the league — there are exactly 8)
   const seeds = leagueStandings.slice(0, 8).map((t, i) => ({ ...t, seed: i + 1 }));
   const yourSeed = seeds.find(s => s.isYou);
+  let yourPlayoffGameLosses = 0;
 
   let html = `<br><br><strong style="color:#ffd700; font-size:1.2em;">🏒 BMHL PLAYOFFS 🏒</strong><br>`;
   html += `<small style="color:#aaa;">You enter as the #${yourSeed.seed} seed</small><br><br>`;
@@ -1189,29 +1193,38 @@ function simulatePlayoffs() {
   if (finalResult.winner.isYou) {
     html += `<span style="color:#ffd700; font-size:1.5em;">🏆 BMHL CHAMPIONS! 🏆</span>`;
 
-    // ---- GRAND FINAL: Zack's All Stars ----
-    html += `<br><br><div style="border:2px solid #ffd700; border-radius:12px; padding:16px; background:#1a1000; margin-top:10px;">`;
-    html += `<strong style="color:#ffd700; font-size:1.3em;">⚠️ BUT WAIT...</strong><br><br>`;
-    html += `<span style="color:#ff4444; font-size:1.1em;">From the shadows emerges the ultimate challenge...</span><br><br>`;
-    html += `<strong style="color:#ffd700; font-size:1.4em;">👑 ZACK'S ALL STARS 👑</strong><br>`;
-    html += `<span style="color:#aaa; font-size:0.85em;">vivaclog • gxzprod • CoolBray000 • 438zack • StanleyCup_World • 6nsta • ninjasemion • ihatefun • noahninja2134 • realflusk</span><br>`;
-    html += `<span style="color:#ff9900;">99 OVR — THE FINAL BOSS</span><br><br>`;
-    html += `<u>🔥 GRAND FINAL (Best of 7) — Winner Takes All</u><br><br>`;
+    if (perfectRegSeason && yourPlayoffGameLosses === 0) {
+      // ---- GRAND FINAL: Zack's All Stars ----
+      html += `<br><br><div style="border:2px solid #ffd700; border-radius:12px; padding:16px; background:#1a1000; margin-top:10px;">`;
+      html += `<strong style="color:#ffd700; font-size:1.3em;">⚠️ BUT WAIT...</strong><br><br>`;
+      html += `<span style="color:#ff4444; font-size:1.1em;">From the shadows emerges the ultimate challenge...</span><br><br>`;
+      html += `<strong style="color:#ffd700; font-size:1.4em;">👑 ZACK'S ALL STARS 👑</strong><br>`;
+      html += `<span style="color:#aaa; font-size:0.85em;">vivaclog • gxzprod • CoolBray000 • 438zack • StanleyCup_World • 6nsta • ninjasemion • ihatefun • noahninja2134 • realflusk</span><br>`;
+      html += `<span style="color:#ff9900;">99 OVR — THE FINAL BOSS</span><br><br>`;
+      html += `<u>🔥 GRAND FINAL (Best of 7) — Winner Takes All</u><br><br>`;
 
-    const zackTeam = { ...ZACKS_ALL_STARS, seed: "👑", isYou: false };
-    const yourGrandFinalEntry = { ...yourSeed };
-    html += `<strong style="color:#ffd700;">GRAND FINAL: ⭐ ${teamName} vs 👑 Zack's All Stars</strong><br>`;
-    const grandFinalResult = simulateSeriesBetween(yourGrandFinalEntry, zackTeam, trackYourGame);
-    html += grandFinalResult.html;
+      const zackTeam = { ...ZACKS_ALL_STARS, seed: "👑", isYou: false };
+      const yourGrandFinalEntry = { ...yourSeed };
+      html += `<strong style="color:#ffd700;">GRAND FINAL: ⭐ ${teamName} vs 👑 Zack's All Stars</strong><br>`;
+      const grandFinalResult = simulateSeriesBetween(yourGrandFinalEntry, zackTeam, trackYourGame);
+      html += grandFinalResult.html;
 
-    if (grandFinalResult.winner.isYou) {
-      html += `<br><span style="color:#ffd700; font-size:1.8em;">🌟 UNSTOPPABLE! YOU DEFEATED ZACK'S ALL STARS! 🌟</span><br>`;
-      html += `<span style="color:#00ffcc; font-size:1.1em;">GOAT STATUS ACHIEVED. 28-0 FOREVER.</span>`;
+      if (grandFinalResult.winner.isYou) {
+        html += `<br><span style="color:#ffd700; font-size:1.8em;">🌟 UNSTOPPABLE! YOU DEFEATED ZACK'S ALL STARS! 🌟</span><br>`;
+        html += `<span style="color:#00ffcc; font-size:1.1em;">GOAT STATUS ACHIEVED. 28-0 FOREVER.</span>`;
+      } else {
+        html += `<br><span style="color:#ff4444; font-size:1.2em;">👑 Zack's All Stars wins ${grandFinalResult.winnerScore}-${grandFinalResult.loserScore}.</span><br>`;
+        html += `<span style="color:#aaa;">You were BMHL Champions... but the All Stars were on another level. Nobody beats Zack.</span>`;
+      }
+      html += `</div>`;
     } else {
-      html += `<br><span style="color:#ff4444; font-size:1.2em;">👑 Zack's All Stars wins ${grandFinalResult.winnerScore}-${grandFinalResult.loserScore}.</span><br>`;
-      html += `<span style="color:#aaa;">You were BMHL Champions... but the All Stars were on another level. Nobody beats Zack.</span>`;
+      const reason = !perfectRegSeason && yourPlayoffGameLosses > 0
+        ? `you lost games in both the regular season and playoffs`
+        : !perfectRegSeason
+        ? `you didn't go 28-0 in the regular season`
+        : `you dropped ${yourPlayoffGameLosses} game${yourPlayoffGameLosses > 1 ? 's' : ''} in the playoffs`;
+      html += `<br><br><span style="color:#888; font-size:0.9em;">👑 Zack's All Stars watched from the shadows... but ${reason}. Go 28-0 AND undefeated through the playoffs to face the final boss.</span>`;
     }
-    html += `</div>`;
 
   } else if (yourFinalExit) {
     html += `<span style="color:#ff6666; font-size:1.1em;">Lost in the Finals — so close! Better luck next year.</span>`;
@@ -1592,6 +1605,7 @@ function clearRoster() {
     playoffStats = null;
     rosterSortMode = 'draft';
     seasonSimulated = false;
+    perfectRegSeason = false;
     tradeAvailable = true;
     updateTradeDeadlineUI();
     document.getElementById("playoffsBtn").style.display = "none";
