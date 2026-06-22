@@ -279,9 +279,29 @@
       border-color: var(--primary);
       font-weight: bold;
     }
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(0, 0, 0, 0.7); 
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: #b5b5b5;
+      font-family: sans-serif;
+      font-size: 1.5rem;
+} 
   </style>
 </head>
 <body>
+  <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+    <p id="loadingOverlayText">Fetching Player Images...</p>
+  </div>
+
   <div class="header">
     <h1>🏒 BMHL 4v4 - 28-0 CHALLENGE 🏒</h1>
     <h2 id="teamNameDisplay" style="color:#00ccff;">Your Dynasty</h2>
@@ -290,9 +310,9 @@
   <div class="container">
     <div class="main">
       <input type="text" id="teamNameInput" placeholder="Enter your team name" style="padding:12px; width:90%; font-size:16px; margin-bottom:10px;">
-      <button onclick="setTeamName()">Set Team Name</button>
-      <button onclick="clearRoster()" style="background:#c00;">Clear Roster</button>
-      <button onclick="autoBestLineup()">⭐ Best Lineup</button><br><br>
+      <button id="setTeamBtn" onclick="setTeamName()">Set Team Name</button>
+      <button id="clearRosterBtn" onclick="clearRoster()" style="background:#c00;">Clear Roster</button>
+      <button id="autoBestLineupBtn" onclick="autoBestLineup()">⭐ Best Lineup</button><br><br>
     
       <button id="spinBtn" onclick="spin()">🎰 SPIN FOR PLAYER</button>
       <button id="blindDraftBtn" onclick="toggleBlindDraft()" style="background:#6600cc;">🙈 Blind Draft: OFF</button>
@@ -368,135 +388,221 @@
     <div class="modal-content">
       <h3 style="color:var(--primary);">📥 Load Team</h3>
       <textarea id="loadCode" placeholder="Paste share code here..." style="width:100%; height:140px; background:#000; color:#0f0; font-family:monospace; padding:10px;"></textarea>
-      <button onclick="loadTeam()">✅ Load Team</button>
-      <button onclick="closeLoadModal()" style="background:#555;">Cancel</button>
+      <button id="loadTeamBtn" onclick="loadTeam()">✅ Load Team</button>
+      <button id="closeLoadModalBtn" onclick="closeLoadModal()" style="background:#555;">Cancel</button>
     </div>
   </div>
 
-<script>
+<script type="module">
+  const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 const playersPool = [
   // Sacramento Sabretooths
-  { name: "2gapes", position: "LW", rating: 85, team: "Sacramento Sabretooths", image: "images/2gapes.png" },
-  { name: "438zack", position: "FWD", rating: 95, team: "Sacramento Sabretooths", image: "images/438zack.png" },
-  { name: "CoolBray000", position: "FWD", rating: 96, team: "Sacramento Sabretooths", image: "images/coolbray000.png" },
-  { name: "Fullthrottlecaleb", position: "LW", rating: 90, team: "Sacramento Sabretooths", image: "images/fullthrottlecaleb.png" },
-  { name: "GummyBlocks", position: "D", rating: 88, team: "Sacramento Sabretooths", image: "images/gummyblocks.png" },
-  { name: "OhGodRun", position: "GK", rating: 86, team: "Sacramento Sabretooths", image: "images/ohgodrun.png" },
-  { name: "qugl", position: "D", rating: 82, team: "Sacramento Sabretooths", image: "images/qugl.png" },
-  { name: "RichPrinceNate", position: "FWD", rating: 87, team: "Sacramento Sabretooths", image: "images/richprincenate.png" },
-  { name: "Sammyyy5028", position: "D", rating: 84, team: "Sacramento Sabretooths", image: "images/sammyyy5028.png" },
-  { name: "vivaclog", position: "FWD", rating: 99, team: "Sacramento Sabretooths", image: "images/vivaclog.png" },
-  { name: "zoticaz", position: "D", rating: 86, team: "Sacramento Sabretooths", image: "images/zoticaz.png" },
+    { name: "2gapes", position: "LW", rating: 85, team: "Sacramento Sabretooths", image: "", userid: "3636002484" },
+  { name: "438zack", position: "FWD", rating: 95, team: "Sacramento Sabretooths", image: "", userid: "70882866" },
+  { name: "CoolBray000", position: "FWD", rating: 96, team: "Sacramento Sabretooths", image: "", userid: "113125789" },
+  { name: "Fullthrottlecaleb", position: "LW", rating: 90, team: "Sacramento Sabretooths", image: "220683052", userid: "220683052" },
+  { name: "GummyBlocks", position: "D", rating: 88, team: "Sacramento Sabretooths", image: "", userid: "42937332" },
+  { name: "OhGodRun", position: "GK", rating: 86, team: "Sacramento Sabretooths", image: "", userid: "231710135" },
+  { name: "qugl", position: "D", rating: 82, team: "Sacramento Sabretooths", image: "", userid: "234815054" },
+  { name: "RichPrinceNate", position: "FWD", rating: 87, team: "Sacramento Sabretooths", image: "", userid: "2882672091" },
+  { name: "Sammyyy5028", position: "D", rating: 84, team: "Sacramento Sabretooths", image: "", userid: "28066281" },
+  { name: "vivaclog", position: "FWD", rating: 99, team: "Sacramento Sabretooths", image: "", userid: "71101267" },
+  { name: "zoticaz", position: "D", rating: 86, team: "Sacramento Sabretooths", image: "", userid: "168816813" },
   // Montauk Mariners
-  { name: "305tobbydog", position: "G", rating: 92, team: "Montauk Mariners", image: "images/305tobbydog.png" },
-  { name: "alexnickjr", position: "C", rating: 89, team: "Montauk Mariners", image: "images/alexnickjr.png" },
-  { name: "AReasonableMike", position: "G", rating: 86, team: "Montauk Mariners", image: "images/areasonablemike.png" },
-  { name: "bknackprod", position: "LW", rating: 90, team: "Montauk Mariners", image: "images/bknackprod.png" },
-  { name: "bongoImao", position: "C", rating: 85, team: "Montauk Mariners", image: "images/bongolmao.png" },
-  { name: "crownnprod", position: "LD", rating: 87, team: "Montauk Mariners", image: "images/crownnprod.png" },
-  { name: "DidntAskNeverWiII", position: "RW", rating: 89, team: "Montauk Mariners", image: "images/didntaskneverwill.png" },
-  { name: "Drizzzzzzzzzzy93", position: "LW", rating: 88, team: "Montauk Mariners", image: "images/drizzzzzzzzzzy93.png" },
-  { name: "Gibbletoot", position: "RD", rating: 86, team: "Montauk Mariners", image: "images/gibbletoot.png" },
-  { name: "Grizo", position: "LD", rating: 88, team: "Montauk Mariners", image: "images/grizo.png" },
-  { name: "MiddleManChaos", position: "RD", rating: 87, team: "Montauk Mariners", image: "images/middlemanchaos.png" },
-  { name: "rylanplaysfootball", position: "C", rating: 88, team: "Montauk Mariners", image: "images/rylanplaysfootball.png" },
-  { name: "swashaprod", position: "RW", rating: 92, team: "Montauk Mariners", image: "images/swashaprod.png" },
-  { name: "TrojanHorseAttack", position: "LD", rating: 90, team: "Montauk Mariners", image: "images/trojanhorseattack.png" },
-  { name: "wnorya", position: "RD", rating: 86, team: "Montauk Mariners", image: "images/wnorya.png" },
-  { name: "yvlcrimson", position: "G", rating: 84, team: "Montauk Mariners", image: "images/yvlcrimson.png" },
+  { name: "305tobbydog", position: "GK", rating: 92, team: "Montauk Mariners", image: "", userid: "3733228677" },
+  { name: "alexnickjr", position: "C", rating: 89, team: "Montauk Mariners", image: "", userid: "135909927" },
+  { name: "AReasonableMike", position: "GK", rating: 86, team: "Montauk Mariners", image: "", userid: "419401846" },
+  { name: "bknackprod", position: "LW", rating: 90, team: "Montauk Mariners", image: "", userid: "174646602" },
+  { name: "bongoImao", position: "C", rating: 85, team: "Montauk Mariners", image: "", userid: "1102571384" },
+  { name: "crownnprod", position: "LD", rating: 87, team: "Montauk Mariners", image: "", userid: "184814618" },
+  { name: "DidntAskNeverWiII", position: "RW", rating: 89, team: "Montauk Mariners", image: "", userid: "2220528350" },
+  { name: "Drizzzzzzzzzzy93", position: "LW", rating: 88, team: "Montauk Mariners", image: "", userid: "338464379" },
+  { name: "Gibbletoot", position: "RD", rating: 86, team: "Montauk Mariners", image: "", userid: "5435752138" },
+  { name: "Grizo", position: "LD", rating: 88, team: "Montauk Mariners", image: "", userid: "25124933" },
+  { name: "MiddleManChaos", position: "RD", rating: 87, team: "Montauk Mariners", image: "", userid: "232284141" },
+  { name: "rylanplaysfootball", position: "C", rating: 88, team: "Montauk Mariners", image: "", userid: "1806094575" },
+  { name: "swashaprod", position: "RW", rating: 92, team: "Montauk Mariners", image: "", userid: "783277299" },
+  { name: "TrojanHorseAttack", position: "LD", rating: 90, team: "Montauk Mariners", image: "", userid: "157522573" },
+  { name: "wnorya", position: "RD", rating: 86, team: "Montauk Mariners", image: "", userid: "201464941" },
+  { name: "yvlcrimson", position: "G", rating: 84, team: "Montauk Mariners", image: "", userid: "310805010" },
   // St. Augustine Armada
-  { name: "1kRhinozy", position: "D", rating: 76, team: "St Augustine Armada", image: "images/1kRhinozy.png" },
-  { name: "Dackers19", position: "FWD", rating: 93, team: "St Augustine Armada", image: "images/Dackers19.png" },
-  { name: "DIMlTRESCU", position: "D", rating: 82, team: "St Augustine Armada", image: "images/DIMlTRESCU.png" },
-  { name: "echocaden", position: "D", rating: 81, team: "St Augustine Armada", image: "images/echocaden.png" },
-  { name: "etanoprod", position: "FWD", rating: 91, team: "St Augustine Armada", image: "images/etanoprod.png" },
-  { name: "gxzprod", position: "FWD", rating: 99, team: "St Augustine Armada", image: "images/gxzprod.png" },
-  { name: "Horr0rmatic", position: "FWD", rating: 87, team: "St Augustine Armada", image: "images/Horr0rmatic.png" },
-  { name: "Kopakai10", position: "D", rating: 83, team: "St Augustine Armada", image: "images/Kopakai10.png" },
-  { name: "Mr_Tornado95", position: "GK", rating: 84, team: "St Augustine Armada", image: "images/Mr_Tornado95.png" },
-  { name: "okglobal", position: "LW", rating: 82, team: "St Augustine Armada", image: "images/okglobal.png" },
-  { name: "PylonXin", position: "D", rating: 86, team: "St Augustine Armada", image: "images/PylonXin.png" },
-  { name: "RollyRolo72", position: "LW", rating: 84, team: "St Augustine Armada", image: "images/RollyRolo72.png" },
-  { name: "snipezofc", position: "D", rating: 83, team: "St Augustine Armada", image: "images/snipezofc.png" },
-  { name: "StanleyCup_World", position: "GK", rating: 95, team: "St Augustine Armada", image: "images/StanleyCup_World.png" },
-  { name: "WhosGalaxy", position: "FWD", rating: 86, team: "St Augustine Armada", image: "images/WhosGalaxy.png" },
-  { name: "zombiesobased", position: "LW", rating: 84, team: "St Augustine Armada", image: "images/zombiesobased.png" },
+  { name: "1kRhinozy", position: "D", rating: 76, team: "St Augustine Armada", image: "", userid: "1189003216" },
+  { name: "Dackers19", position: "FWD", rating: 93, team: "St Augustine Armada", image: "", userid: "194051754" },
+  { name: "DIMlTRESCU", position: "D", rating: 82, team: "St Augustine Armada", image: "", userid: "1998622911" },
+  { name: "echocaden", position: "D", rating: 81, team: "St Augustine Armada", image: "", userid: "82042740" },
+  { name: "etanoprod", position: "FWD", rating: 91, team: "St Augustine Armada", image: "", userid: "181174338" },
+  { name: "gxzprod", position: "FWD", rating: 99, team: "St Augustine Armada", image: "", userid: "200599334" },
+  { name: "Horr0rmatic", position: "FWD", rating: 87, team: "St Augustine Armada", image: "", userid: "3403698410" },
+  { name: "Kopakai10", position: "D", rating: 83, team: "St Augustine Armada", image: "", userid: "204394956" },
+  { name: "Mr_Tornado95", position: "GK", rating: 84, team: "St Augustine Armada", image: "", userid: "2036968592" },
+  { name: "okglobal", position: "LW", rating: 82, team: "St Augustine Armada", image: "", userid: "107855153" },
+  { name: "PylonXin", position: "D", rating: 86, team: "St Augustine Armada", image: "", userid: "188896389" },
+  { name: "RollyRolo72", position: "LW", rating: 84, team: "St Augustine Armada", image: "", userid: "828885976" },
+  { name: "snipezofc", position: "D", rating: 83, team: "St Augustine Armada", image: "", userid: "9697422182" },
+  { name: "StanleyCup_World", position: "GK", rating: 95, team: "St Augustine Armada", image: "", userid: "173818930" },
+  { name: "WhosGalaxy", position: "FWD", rating: 86, team: "St Augustine Armada", image: "", userid: "101235210" },
+  { name: "zombiesobased", position: "LW", rating: 84, team: "St Augustine Armada", image: "", userid: "468566412" },
   // Fuzhou Foxes
-  { name: "6nsta", position: "FWD", rating: 95, team: "Fuzhou Foxes", image: "images/6nsta.png" },
-  { name: "Awesomeroblox4lyfe", position: "LW", rating: 79, team: "Fuzhou Foxes", image: "images/Awesomeroblox4lyfe.png" },
-  { name: "AWOfficialRBLX", position: "LW", rating: 70, team: "Fuzhou Foxes", image: "images/AWOfficialRBLX.png" },
-  { name: "Cookie77622", position: "GK", rating: 91, team: "Fuzhou Foxes", image: "images/Cookie77622.png" },
-  { name: "Deqarus", position: "FWD", rating: 86, team: "Fuzhou Foxes", image: "images/Deqarus.png" },
-  { name: "DiamondMan215", position: "FWD", rating: 87, team: "Fuzhou Foxes", image: "images/DiamondMan215.png" },
-  { name: "Drxisaitl", position: "D", rating: 78, team: "Fuzhou Foxes", image: "images/Drxisaitl.png" },
-  { name: "G0nW1ld", position: "D", rating: 90, team: "Fuzhou Foxes", image: "images/G0nW1ld.png" },
-  { name: "hiquazkata", position: "FWD", rating: 88, team: "Fuzhou Foxes", image: "images/hiquazkata.png" },
-  { name: "HockeyPup32", position: "D", rating: 89, team: "Fuzhou Foxes", image: "images/HockeyPup32.png" },
-  { name: "Jositheseller", position: "D", rating: 75, team: "Fuzhou Foxes", image: "images/Jositheseller.png" },
-  { name: "nlj04", position: "GK", rating: 85, team: "Fuzhou Foxes", image: "images/nlj04.png" },
-  { name: "NoArFi10", position: "LW", rating: 75, team: "Fuzhou Foxes", image: "images/NoArFi10.png" },
-  { name: "witheringvoices", position: "LW", rating: 67, team: "Fuzhou Foxes", image: "images/witheringvoices.png" },
+  { name: "6nsta", position: "FWD", rating: 95, team: "Fuzhou Foxes", image: "", userid: "45077040" },
+  { name: "Awesomeroblox4lyfe", position: "LW", rating: 79, team: "Fuzhou Foxes", image: "", userid: "2294877460" },
+  { name: "AWOfficialRBLX", position: "LW", rating: 70, team: "Fuzhou Foxes", image: "", userid: "29143491" },
+  { name: "Cookie77622", position: "GK", rating: 85, team: "Fuzhou Foxes", image: "", userid: "1221589837" },
+  { name: "Deqarus", position: "FWD", rating: 86, team: "Fuzhou Foxes", image: "", userid: "1515886866" },
+  { name: "DiamondMan215", position: "FWD", rating: 87, team: "Fuzhou Foxes", image: "", userid: "643855534" },
+  { name: "Drxisaitl", position: "D", rating: 78, team: "Fuzhou Foxes", image: "", userid: "4173314" },
+  { name: "G0nW1ld", position: "D", rating: 90, team: "Fuzhou Foxes", image: "", userid: "103242116" },
+  { name: "hiquazkata", position: "FWD", rating: 88, team: "Fuzhou Foxes", image: "", userid: "130611609" },
+  { name: "HockeyPup32", position: "D", rating: 89, team: "Fuzhou Foxes", image: "", userid: "515051006" },
+  { name: "Jositheseller", position: "D", rating: 75, team: "Fuzhou Foxes", image: "", userid: "767422860" },
+  { name: "nlj04", position: "GK", rating: 85, team: "Fuzhou Foxes", image: "", userid: "47673407" },
+  { name: "NoArFi10", position: "LW", rating: 75, team: "Fuzhou Foxes", image: "", userid: "1162420219" },
+  { name: "witheringvoices", position: "LW", rating: 67, team: "Fuzhou Foxes", image: "", userid: "121768488" },
   // Toronto Icemen
-  { name: "airpod0402", position: "D", rating: 74, team: "Toronto Icemen", image: "images/airpod0402.png" },
-  { name: "BuzztheFlyGuy", position: "D", rating: 83, team: "Toronto Icemen", image: "images/BuzztheFlyGuy.png" },
-  { name: "DesiredBuiId", position: "D", rating: 85, team: "Toronto Icemen", image: "images/DesiredBuiId.png" },
-  { name: "H3llebuyck", position: "LW", rating: 87, team: "Toronto Icemen", image: "images/H3llebuyck.png" },
-  { name: "hooperovv", position: "GK", rating: 93, team: "Toronto Icemen", image: "images/hooperovv.png" },
-  { name: "noahninja2134", position: "FWD", rating: 94, team: "Toronto Icemen", image: "images/noahninja2134.png" },
-  { name: "OffAntplayz", position: "D", rating: 83, team: "Toronto Icemen", image: "images/OffAntplayz.png" },
-  { name: "realflusk", position: "FWD", rating: 94, team: "Toronto Icemen", image: "images/realflusk.png" },
-  { name: "Universalzog", position: "FWD", rating: 93, team: "Toronto Icemen", image: "images/Universalzog.png" },
-  { name: "vPaidJake", position: "LW", rating: 88, team: "Toronto Icemen", image: "images/vPaidJake.png" },
-  { name: "x_kxne", position: "LW", rating: 85, team: "Toronto Icemen", image: "images/x_kxne.png" },
+  { name: "787remi", position: "FWD", rating: 90, team: "Toronto Icemen", image: "", userid: "689578330" },
+  { name: "airpod0402", position: "D", rating: 78, team: "Toronto Icemen", image: "", userid: "2850118615" },
+  { name: "BuzztheFlyGuy", position: "D", rating: 83, team: "Toronto Icemen", image: "", userid: "167679417" },
+  { name: "DesiredBuiId", position: "D", rating: 85, team: "Toronto Icemen", image: "", userid: "1240908865" },
+  { name: "H3llebuyck", position: "LW", rating: 87, team: "Toronto Icemen", image: "", userid: "2517875346" },
+  { name: "hooperovv", position: "GK", rating: 93, team: "Toronto Icemen", image: "", userid: "963683683" },
+  { name: "noahninja2134", position: "FWD", rating: 94, team: "Toronto Icemen", image: "", userid: "142826685" },
+  { name: "OffAntplayz", position: "D", rating: 85, team: "Toronto Icemen", image: "", userid: "1334126255" },
+  { name: "realflusk", position: "FWD", rating: 94, team: "Toronto Icemen", image: "", userid: "1874198988" },
+  { name: "Universalzog", position: "FWD", rating: 93, team: "Toronto Icemen", image: "", userid: "7258151958" },
+  { name: "vPaidJake", position: "LW", rating: 90, team: "Toronto Icemen", image: "", userid: "880372429" },
+  { name: "x_kxne", position: "LW", rating: 85, team: "Toronto Icemen", image: "", userid: "102993011" },
   // Myrtle Beach Sharks
-  { name: "cay11loll", position: "D", rating: 80, team: "Myrtle Beach Sharks", image: "images/cay11loll.png" },
-  { name: "Guigui15082022", position: "D", rating: 50, team: "Myrtle Beach Sharks", image: "images/Guigui15082022.png" },
-  { name: "Jwkmann", position: "FWD", rating: 84, team: "Myrtle Beach Sharks", image: "images/Jwkmann.png" },
-  { name: "Lcoop160", position: "FWD", rating: 88, team: "Myrtle Beach Sharks", image: "images/Lcoop160.png" },
-  { name: "LeakedPiins", position: "D", rating: 87, team: "Myrtle Beach Sharks", image: "images/LeakedPiins.png" },
-  { name: "Inhalin", position: "D", rating: 83, team: "Myrtle Beach Sharks", image: "images/Inhalin.png" },
-  { name: "ninjasemion", position: "FWD", rating: 95, team: "Myrtle Beach Sharks", image: "images/ninjasemion.png" },
-  { name: "Noobbest991", position: "FWD", rating: 78, team: "Myrtle Beach Sharks", image: "images/Noobbest991.png" },
-  { name: "pxstasobased", position: "FWD", rating: 88, team: "Myrtle Beach Sharks", image: "images/pxstasobased.png" },
-  { name: "rreap1", position: "LW", rating: 84, team: "Myrtle Beach Sharks", image: "images/rreap1.png" },
-  { name: "s7vzr1nho", position: "LW", rating: 88, team: "Myrtle Beach Sharks", image: "images/s7vzr1nho.png" },
-  { name: "squishymuffins34", position: "FWD", rating: 86, team: "Myrtle Beach Sharks", image: "images/squishymuffins34.png" },
-  { name: "WhosPolisius", position: "GK", rating: 88, team: "Myrtle Beach Sharks", image: "images/WhosPolisius.png" },
+  { name: "cay11loll", position: "D", rating: 80, team: "Myrtle Beach Sharks", image: "", userid: "321082026" },
+  { name: "Guigui15082022", position: "D", rating: 75, team: "Myrtle Beach Sharks", image: "", userid: "3807436333" },
+  { name: "Jwkmann", position: "FWD", rating: 84, team: "Myrtle Beach Sharks", image: "", userid: "2750290110" },
+  { name: "Lcoop160", position: "FWD", rating: 88, team: "Myrtle Beach Sharks", image: "", userid: "646638891" },
+  { name: "LeakedPiins", position: "D", rating: 87, team: "Myrtle Beach Sharks", image: "", userid: "1242003693" },
+  { name: "lnhaIin", position: "D", rating: 83, team: "Myrtle Beach Sharks", image: "", userid: "1934210021" },
+  { name: "ninjasemion", position: "FWD", rating: 90, team: "Myrtle Beach Sharks", image: "", userid: "571026801" },
+  { name: "Noobbest991", position: "FWD", rating: 78, team: "Myrtle Beach Sharks", image: "", userid: "1233305137" },
+  { name: "pxstasobased", position: "FWD", rating: 91, team: "Myrtle Beach Sharks", image: "", userid: "1052878801" },
+  { name: "rreap1", position: "LW", rating: 84, team: "Myrtle Beach Sharks", image: "", userid: "1968107721" },
+  { name: "s7vzr1nho", position: "LW", rating: 88, team: "Myrtle Beach Sharks", image: "", userid: "646637806" },
+  { name: "squishymuffins34", position: "FWD", rating: 86, team: "Myrtle Beach Sharks", image: "", userid: "1313809090" },
+  { name: "WhosPolisius", position: "GK", rating: 88, team: "Myrtle Beach Sharks", image: "", userid: "325995599" },
   // Gummy Express
-  { name: "andy21724", position: "FWD", rating: 86, team: "Gummy Express", image: "images/andy21724.png" },
-  { name: "Asomeml11", position: "D", rating: 83, team: "Gummy Express", image: "images/Asomeml11.png" },
-  { name: "DeportedIndian", position: "LW", rating: 85, team: "Gummy Express", image: "images/DeportedIndian.png" },
-  { name: "duotroop", position: "GK", rating: 85, team: "Gummy Express", image: "images/duotroop.png" },
-  { name: "g4mski", position: "LW", rating: 86, team: "Gummy Express", image: "images/g4mski.png" },
-  { name: "ihatefun", position: "FWD", rating: 95, team: "Gummy Express", image: "images/ihatefun.png" },
-  { name: "loltommy6", position: "D", rating: 84, team: "Gummy Express", image: "images/loltommy6.png" },
-  { name: "M_xkar", position: "D", rating: 85, team: "Gummy Express", image: "images/M_xkar.png" },
-  { name: "mattserov", position: "FWD", rating: 90, team: "Gummy Express", image: "images/mattserov.png" },
-  { name: "plaserov", position: "FWD", rating: 86, team: "Gummy Express", image: "images/plaserov.png" },
-  { name: "t_rbocharge", position: "GK", rating: 92, team: "Gummy Express", image: "images/t_rbocharge.png" },
-  { name: "xxx_hockeykid9148", position: "D", rating: 82, team: "Gummy Express", image: "images/xxx_hockeykid9148.png" },
-  { name: "yorobbie132", position: "LW", rating: 86, team: "Gummy Express", image: "images/yorobbie132.png" },
+  { name: "andy21724", position: "FWD", rating: 86, team: "Gummy Express", image: "", userid: "47661578" },
+  { name: "Asomeml11", position: "D", rating: 83, team: "Gummy Express", image: "", userid: "170031832" },
+  { name: "DeportedIndian", position: "LW", rating: 85, team: "Gummy Express", image: "", userid: "372910049" },
+  { name: "duotroop", position: "GK", rating: 85, team: "Gummy Express", image: "", userid: "130191578" },
+  { name: "g4mski", position: "LW", rating: 86, team: "Gummy Express", image: "", userid: "374450820" },
+  { name: "ihatefun", position: "FWD", rating: 95, team: "Gummy Express", image: "", userid: "25868586" },
+  { name: "loltommy6", position: "D", rating: 78, team: "Gummy Express", image: "", userid: "73918166" },
+  { name: "M_xkar", position: "D", rating: 87, team: "Gummy Express", image: "", userid: "96233017" },
+  { name: "mattserov", position: "FWD", rating: 90, team: "Gummy Express", image: "", userid: "310293225" },
+  { name: "plaserov", position: "FWD", rating: 86, team: "Gummy Express", image: "", userid: "133696917" },
+  { name: "t_rbocharge", position: "GK", rating: 92, team: "Gummy Express", image: "", userid: "348934319" },
+  { name: "xxx_hockeykid9148", position: "D", rating: 75, team: "Gummy Express", image: "", userid: "1977020569" },
+  { name: "yorobbie132", position: "LW", rating: 86, team: "Gummy Express", image: "", userid: "29359258" },
   // Thunder Bay Surge
-  { name: "Aquaticbiaze", position: "FWD", rating: 85, team: "Thunder Bay Surge", image: "images/Aquaticbiaze.png" },
-  { name: "b_mav", position: "D", rating: 76, team: "Thunder Bay Surge", image: "images/b_mav.png" },
-  { name: "Brusk74", position: "GK", rating: 83, team: "Thunder Bay Surge", image: "images/Brusk74.png" },
-  { name: "elitebfc", position: "FWD", rating: 85, team: "Thunder Bay Surge", image: "images/elitebfc.png" },
-  { name: "gin_20", position: "FWD", rating: 84, team: "Thunder Bay Surge", image: "images/gin_20.png" },
-  { name: "hockeyrango23", position: "LW", rating: 80, team: "Thunder Bay Surge", image: "images/hockeyrango23.png" },
-  { name: "JxstinFriedChicken", position: "FWD", rating:86, team: "Thunder Bay Surge", image: "images/JxstinFriedChicken.png" },
-  { name: "loxrez", position: "FWD", rating: 85, team: "Thunder Bay Surge", image: "images/loxrez.png" },
-  { name: "nxvein", position: "FWD", rating: 88, team: "Thunder Bay Surge", image: "images/nxvein.png" },
-  { name: "pinktwhitet", position: "LW", rating: 75, team: "Thunder Bay Surge", image: "images/pinktwhitet.png" },
-  { name: "snakiejakie123", position: "LW", rating: 84, team: "Thunder Bay Surge", image: "images/snakiejakie123.png" },
-  { name: "soreezzzz", position: "D", rating: 75, team: "Thunder Bay Surge", image: "images/soreezzzz.png" },
-  { name: "uaq_x", position: "FWD", rating: 91, team: "Thunder Bay Surge", image: "images/uaq_x.png" },
-  { name: "WaitedSeverino", position: "LW", rating: 80, team: "Thunder Bay Surge", image: "images/WaitedSeverino.png" },
-  { name: "z_R0tation", position: "FWD", rating: 83, team: "Thunder Bay Surge", image: "images/z_R0tation.png" },
+  { name: "Aquaticbiaze", position: "FWD", rating: 85, team: "Thunder Bay Surge", image: "", userid: "123285855" },
+  { name: "b_mav", position: "D", rating: 76, team: "Thunder Bay Surge", image: "", userid: "36591918" },
+  { name: "Brusk74", position: "GK", rating: 83, team: "Thunder Bay Surge", image: "", userid: "37257192" },
+  { name: "elitebfc", position: "FWD", rating: 85, team: "Thunder Bay Surge", image: "", userid: "713633919" },
+  { name: "gin_20", position: "FWD", rating: 81, team: "Thunder Bay Surge", image: "", userid: "460217194" },
+  { name: "hockeyrango23", position: "LW", rating: 80, team: "Thunder Bay Surge", image: "", userid: "1657079180" },
+  { name: "JxstinFriedChicken", position: "FWD", rating: 77, team: "Thunder Bay Surge", image: "", userid: "721854101" },
+  { name: "loxrez", position: "FWD", rating: 85, team: "Thunder Bay Surge", image: "", userid: "905432030" },
+  { name: "nxvein", position: "FWD", rating: 88, team: "Thunder Bay Surge", image: "", userid: "3158791273" },
+  { name: "pinktwhitet", position: "LW", rating: 75, team: "Thunder Bay Surge", image: "", userid: "307524915" },
+  { name: "snakiejakie123", position: "LW", rating: 84, team: "Thunder Bay Surge", image: "", userid: "149679844" },
+  { name: "soreezzzz", position: "D", rating: 75, team: "Thunder Bay Surge", image: "", userid: "564285160" },
+  { name: "uaq_x", position: "FWD", rating: 91, team: "Thunder Bay Surge", image: "", userid: "325926352" },
+  { name: "WaitedSeverino", position: "LW", rating: 80, team: "Thunder Bay Surge", image: "", userid: "70428886" },
+  { name: "z_R0tation", position: "FWD", rating: 83, team: "Thunder Bay Surge", image: "", userid: "75436545" },
   // Troll players
-  { name: "Evil Chase", position: "GK", rating: 1, team: "The Void", image: "https://via.placeholder.com/60/ff0000/ffffff?text=👿" },
-  { name: "Zatterbee", position: "FWD", rating: 1, team: "The Void", image: "https://via.placeholder.com/60/880000/ffffff?text=💀" },
-  { name: "Markour", position: "D", rating: 1, team: "The Void", image: "https://via.placeholder.com/60/550000/ffffff?text=👹" }
+  { name: "Evil Chase", position: "GK", rating: 1, team: "The Void", image: "https://dummyimage.com/150x150/550000/ffffff?text=!!!", userid: null },
+  { name: "Zatterbee", position: "FWD", rating: 1, team: "The Void", image: "https://dummyimage.com/150x150/550000/ffffff?text=!!!", userid: null },
+  { name: "Markour", position: "D", rating: 1, team: "The Void", image: "https://dummyimage.com/150x150/550000/ffffff?text=!!!", userid: null }
 ];
+
+document.getElementById("loadingOverlay").style.display = "flex";
+
+// get headshot images from roblox
+async function getAvatarHeadshotsByUserId(userIdsArray, imgSize) {
+  let chunked = [];
+  let results = [];
+
+  let i = 0
+  while (i < userIdsArray.length) {
+    chunked.push(userIdsArray.slice(i, i + 100));
+    i += 100;
+  }
+
+  for (let currentArrayChunk of chunked) {
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 7500);
+
+    try {
+      const response = await fetch(
+        `https://thumbnails.rotunnel.com/v1/users/avatar-headshot?userIds=${currentArrayChunk.join(',')}&size=${imgSize}&format=Png`,
+        { signal: controller.signal } // Pass the abort signal to fetch
+      );
+    
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) throw new Error("thumbnail fetch error");
+
+      const jsonResponse = await response.json();
+      
+      if (jsonResponse && jsonResponse.data) {
+        results.push(...jsonResponse.data);
+      }
+
+    } catch (error) {
+      clearTimeout(timeoutId);
+
+      if (error.name === 'AbortError') {
+        console.error(`timed out for chunk: ${currentArrayChunk.slice(0, 3)}...`);
+      } else {
+        console.error(`Fuck you: ${error}`);
+      }
+    }
+  }
+  
+  return results;
+};
+
+async function updatePlayerImages() {
+  // prepare array that stores userids, then chunks it into arrays of 100 because roblox will reject any request with >100 userids
+  let listOfUserIds = [];
+
+playersPool.forEach(player => {
+    if (player.userid != null) listOfUserIds.push(player.userid); // if a player does not have a user id (Shits like evil chase) it will not add to the userid list because no user (Shits like Evil Chase) exist
+});
+
+  const headshotsGet = await getAvatarHeadshotsByUserId(listOfUserIds, "150x150");
+
+  if (headshotsGet.length === 0) { // image loading failed, meaning an empty array
+    document.getElementById("loadingOverlayText").textContent = "Fetching images failed!"; 
+  } else {
+    document.getElementById("loadingOverlayText").textContent = "Fetched images successfully!"; 
+  }
+
+  await wait(1000)
+  document.getElementById("loadingOverlay").style.display = "none"; // turns off loading screen
+
+
+  let headshotList = headshotsGet
+
+for (const headshot of headshotList) {
+      const targetPlayer = playersPool.find(p => p.userid.toString() === headshot.targetId.toString());
+      
+      if (targetPlayer) {
+          targetPlayer.image = headshot.imageUrl;
+      } else {
+          console.warn(`targetid not found in playerpool: ${headshot.targetId}`);
+      }
+  };
+};
+
+await updatePlayerImages();
 
 let myTeam = [];
 let lines = { line1: [], line2: [], goalies: [] };
@@ -733,7 +839,7 @@ function spin() {
                 transition:all 0.2s;" 
                 onmouseover="this.style.borderColor='#00ffcc'; this.style.background='#253550';"
                 onmouseout="this.style.borderColor='#00ccff44'; this.style.background='#1f2a44';">
-                <img src="${player.image}" onerror="this.src='https://via.placeholder.com/44/00ccff/000?text=${player.name[0]}'"
+                <img src="${player.image}" onerror="this.src='https://dummyimage.com/44/00ccff/000?text=${player.name[0]}'"
                   style="width:44px; height:44px; border-radius:50%; border:2px solid #00ccff; object-fit:cover;">
                 <div style="text-align:left;">
                   <strong style="font-size:1.05em;">${getDisplayName(player)}</strong><br>
@@ -1473,7 +1579,7 @@ function renderTradeRosterList() {
     row.onmouseout = () => { row.style.borderColor = '#00ccff44'; };
     row.onclick = () => startTrade(index);
     row.innerHTML = `
-      <img src="${player.image}" onerror="this.src='https://via.placeholder.com/40/00ccff/000?text=${player.name[0]}'" style="width:40px; height:40px; border-radius:50%; border:2px solid #00ccff; object-fit:cover;">
+      <img src="${player.image}" onerror="this.src='https://dummyimage.com/40/00ccff/000?text=${player.name[0]}'" style="width:40px; height:40px; border-radius:50%; border:2px solid #00ccff; object-fit:cover;">
       <div style="flex:1; text-align:left;">
         <strong>${getDisplayName(player)}</strong><br>
         <span style="color:#00ffcc; font-size:0.85em;">${player.position} • ${player.rating} OVR</span>
@@ -1537,7 +1643,7 @@ function renderTradeOffers(outgoing) {
         transition:all 0.2s;"
         onmouseover="this.style.borderColor='#ff9900'; this.style.background='#253550';"
         onmouseout="this.style.borderColor='#00ccff44'; this.style.background='#1f2a44';">
-        <img src="${player.image}" onerror="this.src='https://via.placeholder.com/44/00ccff/000?text=${player.name[0]}'"
+        <img src="${player.image}" onerror="this.src='https://dummyimage.com/44/00ccff/000?text=${player.name[0]}'"
           style="width:44px; height:44px; border-radius:50%; border:2px solid #00ccff; object-fit:cover;">
         <div style="text-align:left;">
           <strong style="font-size:1.05em;">${getDisplayName(player)}</strong><br>
@@ -1751,7 +1857,7 @@ function renderRoster() {
         <small style="color:#aaa;">${player.team}</small>
       </div>
     ` : `
-      <img src="${player.image}" alt="${player.name}" onerror="this.src='https://via.placeholder.com/60/00ccff/000?text=${player.name[0]}'">
+      <img src="${player.image}" alt="${player.name}" onerror="this.src='https://dummyimage.com/60/00ccff/000?text=${player.name[0]}'">
       <div style="flex:1; text-align:left;">
         <strong>${getDisplayName(player)}</strong><br>
         ${player.position} — ${player.rating} OVR<br>
@@ -1792,7 +1898,7 @@ function renderLine(lineKey, containerId) {
       const playoffStatHTML = formatPlayoffStatLine(p);
       slot.innerHTML = `
         <div class="pos">${posLabel}</div>
-        <img src="${p.image}" onerror="this.src='https://via.placeholder.com/52/00ccff/000?text=${p.name[0]}'">
+        <img src="${p.image}" onerror="this.src='https://dummyimage.com/52/00ccff/000?text=${p.name[0]}'">
         <strong>${getDisplayName(p)}</strong><br>
         <small>${p.rating} OVR</small>
         ${statHTML}
@@ -1823,7 +1929,7 @@ function renderGoalies() {
       const playoffStatHTML = formatPlayoffStatLine(p);
       slot.innerHTML = `
         <div class="pos">G</div>
-        <img src="${p.image}" onerror="this.src='https://via.placeholder.com/52/00ccff/000?text=${p.name[0]}'">
+        <img src="${p.image}" onerror="this.src='https://dummyimage.com/52/00ccff/000?text=${p.name[0]}'">
         <strong>${getDisplayName(p)}</strong><br>
         <small>${p.rating} OVR</small>
         ${statHTML}
@@ -1844,6 +1950,55 @@ function renderLines() {
 
 renderRoster();
 renderLines();
+
+// expose to window so html can access functions
+Object.assign(window, {
+  closeShareModal,
+  showLoadModal,
+  closeLoadModal,
+  loadTeam,
+  setTeamName,
+  clearRoster,
+  shareTeam,
+  copyShareCode,
+  teamOverall,
+  positionSortRank,
+  setRosterSort,
+  renderRoster,
+  lineOverall,
+  renderLine,
+  assignToSlot,
+  closeModal,
+  showAssignModal,
+  autoBestLineup,
+  toggleBlindDraft,
+  spin,
+  respin,
+  draftPlayer,
+  tradeCategory,
+  openTradeModal,
+  closeTradeModal,
+  renderTradeRosterList,
+  startTrade,
+  renderTradeOffers,
+  confirmTrade,
+  updateTradeDeadlineUI,
+  unlockSeasonSimulation,
+  simulateSeason,
+  simulateLeagueStandings,
+  renderStandings,
+  switchSidebarTab,
+  simulateSeriesBetween,
+  simulatePlayoffs,
+  skaterStats,
+  generateSeasonStats,
+  getDisplayName,
+  formatPlayoffStatLine,
+  countAssignedByType,
+  calculateTeamStrength,
+  renderPlayoffStatsSummary
+});
+
 </script>
 </body>
 </html>
